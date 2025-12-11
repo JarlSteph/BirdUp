@@ -35,4 +35,5 @@ class SwedenMap:
             raise ValueError(f"Region '{region_name}' not found.")
         centroid = region.geometry.iloc[0].centroid
         return centroid.y, centroid.x  # Return as (lat, lon)
-    
+
+

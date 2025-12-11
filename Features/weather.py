@@ -14,13 +14,23 @@ def API_tomorrow_weather(lon:float, lat:float, days:int = 7) -> dict:
     Returns:
         dict: Weather data for tomorrow 
     """
-    url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&daily=temperature_2m_mean,precipitation_sum,visibility_mean,wind_speed_10m_mean&timezone=Europe%2FBerlin&forecast_days={days}"
+    url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&daily=temperature_2m_mean,precipitation_sum,weather_code,wind_speed_10m_mean&timezone=Europe%2FBerlin&forecast_days={days}"
     response = requests.get(url)
-    if response.status_code == 200:
+    if response.status_code == 200: 
         data = response.json()
         return data
     else:
         raise Exception(f"API request failed with status code {response.status_code}")
     
+
+
+def historical_weather_download(start_date:str, lon:float, lat:float) -> dict:
+    url = f"https://archive-api.open-meteo.com/v1/archive?latitude={lat}&longitude={lon}&start_date={start_date}&end_date=2025-12-09&daily=temperature_2m_mean,precipitation_sum,wind_speed_10m_mean,weather_code&timezone=Europe%2FBerlin"
+    response = requests.get(url)
+    if response.status_code == 200: 
+        data = response.json()
+        return data
+    else:
+        raise Exception(f"API request failed with status code {response.status_code}")
 
     
