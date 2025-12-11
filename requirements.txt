@@ -1,0 +1,8 @@
+pandas
+hopsworks
+torch
+numpy
+matplotlib
+scikit-learn
+geopandas
+shapely
