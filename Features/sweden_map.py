@@ -13,7 +13,8 @@ class SwedenMap:
     def __init__(self):
         self.gdf_wgs84 = gpd.read_file("Data/geo/svenska-landskap-klippt.geo.json")
         self.gdf_projected = self.gdf_wgs84.to_crs(TARGET_CRS)
-
+        self.centroid_dict = self.create_centroid_dict()
+    
     def point_to_region(self, lon, lat):
         
         point_geom = Point(lon, lat)
@@ -26,8 +27,7 @@ class SwedenMap:
             point_projected = point_gs.to_crs(TARGET_CRS).iloc[0]
             distances = self.gdf_projected.distance(point_projected)
             closest_region_idx = distances.idxmin()
-            return self.gdf_wgs84.loc[closest_region_idx]["landskap"]
-        
+            return self.gdf_wgs84.loc[closest_region_idx]["landskap"]        
 
     def middle_point_of_region(self, region_name):
         region = self.gdf_wgs84[self.gdf_wgs84["landskap"] == region_name]
@@ -35,5 +35,12 @@ class SwedenMap:
             raise ValueError(f"Region '{region_name}' not found.")
         centroid = region.geometry.iloc[0].centroid
         return centroid.y, centroid.x  # Return as (lat, lon)
-
+    
+    def create_centroid_dict(self):
+        centroid_dict = {}
+        for _, row in self.gdf_wgs84.iterrows():
+            region_name = row["landskap"]
+            centroid = row.geometry.centroid
+            centroid_dict[region_name] = (centroid.y, centroid.x)  # (lat, lon)
+        return centroid_dict
 

@@ -2,7 +2,7 @@
 To extract the HISTORICAL weather data & to API call the new weather data
 """
 import requests
-
+from datetime import datetime, timedelta
 
 def API_tomorrow_weather(lon:float, lat:float, days:int = 7) -> dict:
     """
@@ -25,11 +25,12 @@ def API_tomorrow_weather(lon:float, lat:float, days:int = 7) -> dict:
 
 
 def historical_weather_download(start_date:str, lon:float, lat:float) -> dict:
-    url = f"https://archive-api.open-meteo.com/v1/archive?latitude={lat}&longitude={lon}&start_date={start_date}&end_date=2025-12-09&daily=temperature_2m_mean,precipitation_sum,wind_speed_10m_mean,weather_code&timezone=Europe%2FBerlin"
+    TODATE = datetime.now().strftime("%Y-%m-%d")
+    url = f"https://archive-api.open-meteo.com/v1/archive?latitude={lat}&longitude={lon}&start_date={start_date}&end_date={TODATE}&daily=temperature_2m_mean,precipitation_sum,wind_speed_10m_mean,weather_code&timezone=Europe%2FBerlin"
     response = requests.get(url)
     if response.status_code == 200: 
         data = response.json()
-        return data
+        return data, ["OBSERVATION DATE", "TEMPERATURE", "RAIN", "WIND", "WEATHERCODE"]
     else:
         raise Exception(f"API request failed with status code {response.status_code}")
 
