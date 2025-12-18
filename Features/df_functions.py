@@ -1,4 +1,15 @@
 #1
+
+import os
+import requests
+import pandas as pd
+from datetime import datetime
+
+from .birds import API_bird_data
+from .weather import *
+from .sweden_map import SwedenMap
+
+
 def drop_unused_columns(df: pd.DataFrame) -> pd.DataFrame:
     cols_keep = ["OBSERVATION COUNT", "LATITUDE", "LONGITUDE", "OBSERVATION DATE", "TIME OBSERVATIONS STARTED"]
 
@@ -251,6 +262,8 @@ def historical():
         final_bird_dfs = pd.concat([final_bird_dfs, df_1h_months], ignore_index=True)
 
     final_bird_dfs.drop(columns=["LATITUDE", "LONGITUDE"], inplace=True)
+    final_bird_dfs.columns = final_bird_dfs.columns.str.replace(" ", "_")
+
     return final_bird_dfs
 
 
@@ -293,6 +306,8 @@ def daily():
     # one hot and add norm year
     ret_df = add_normalized_year(ret_df, start_year=2011)
     ret_df = one_hot_months(ret_df)
+    ret_df.columns = ret_df.columns.str.replace(" ", "_")
+
     
     return ret_df
 
@@ -329,8 +344,11 @@ def features(days: int = 7) -> pd.DataFrame:
     final_df['OBSERVATION DATE'] = (
     pd.to_datetime(final_df['OBSERVATION DATE'])
       .dt.strftime('%Y-%m-%d'))
+    final_df.columns = final_df.columns.str.replace(" ", "_")
+
     return final_df
     
+
 
 
     
