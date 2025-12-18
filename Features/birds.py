@@ -11,7 +11,7 @@ import requests
 load_dotenv()
 BIRD_API_KEY = os.getenv("BIRD_KEY")
 
-def API_bird_data(bird_type: str = "goleag", location: str = "SE") -> dict:
+def API_bird_data(bird_type: str = "goleag", location: str = "SE", backfill: bool = False) -> dict:
     """
     Fetch recent bird observation data from the eBird API. (the birdcode is in the link eg):
     https://ebird.org/species/goleag --> goleag or whteag
@@ -29,11 +29,16 @@ def API_bird_data(bird_type: str = "goleag", location: str = "SE") -> dict:
     url = f"https://api.ebird.org/v2/data/obs/{location}/recent/{bird_type}"
 
     payload={}
+    params = {}
     headers = {
   'X-eBirdApiToken': BIRD_API_KEY
     }
+    if backfill:
+        params["back"] = 30  # integer, not string
+        
 
-    response = requests.request("GET", url, headers=headers, data=payload)
+
+    response = requests.request("GET", url, headers=headers, data=payload, params=params)
     print(f"Bird data API response code: {response.status_code}")
     return response.json()
 
