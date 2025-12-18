@@ -39,7 +39,6 @@ def API_bird_data(bird_type: str = "goleag", location: str = "SE", backfill: boo
 
 
     response = requests.request("GET", url, headers=headers, data=payload, params=params)
-    print(f"Bird data API response code: {response.status_code}")
     return response.json()
 
 
