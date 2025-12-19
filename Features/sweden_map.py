@@ -11,7 +11,7 @@ WGS84_CRS = "EPSG:4326"
 
 class SwedenMap:
     def __init__(self):
-        self.gdf_wgs84 = gpd.read_file("Data/geo/svenska-landskap-klippt.geo.json")
+        self.gdf_wgs84 = gpd.read_file("Git_data/geo/svenska-landskap-klippt.geo.json")
         self.gdf_projected = self.gdf_wgs84.to_crs(TARGET_CRS)
         self.centroid_dict = self.create_centroid_dict()
     

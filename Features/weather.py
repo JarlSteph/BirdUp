@@ -3,6 +3,11 @@ To extract the HISTORICAL weather data & to API call the new weather data
 """
 import requests
 from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
+
+def _today_se_str() -> str:
+    return datetime.now(ZoneInfo("Europe/Stockholm")).date().isoformat()
+
 
 def API_tomorrow_weather(lon:float, lat:float, days:int = 7) -> dict:
     """
@@ -25,7 +30,8 @@ def API_tomorrow_weather(lon:float, lat:float, days:int = 7) -> dict:
 
 
 def historical_weather_download(start_date:str, lon:float, lat:float) -> dict:
-    TODATE = datetime.now().strftime("%Y-%m-%d")
+    TODATE = _today_se_str() #CHANGED CHANGED for Git Actions
+    #TODATE = datetime.now().strftime("%Y-%m-%d") OLD ONE
     url = f"https://archive-api.open-meteo.com/v1/archive?latitude={lat}&longitude={lon}&start_date={start_date}&end_date={TODATE}&daily=temperature_2m_mean,precipitation_sum,wind_speed_10m_mean,weather_code&timezone=Europe%2FBerlin"
     response = requests.get(url)
     if response.status_code == 200: 

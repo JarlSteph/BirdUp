@@ -3,7 +3,10 @@
 import os
 import requests
 import pandas as pd
+
 from datetime import datetime
+from zoneinfo import ZoneInfo
+
 
 from .birds import API_bird_data
 from .weather import *
@@ -333,7 +336,9 @@ def daily():
     Get the weather and bird obs to add to the Hopsworks dataframe
     """
     # Get today's date in 'YYYY-MM-DD' format
-    TODAY = datetime.now().strftime('%Y-%m-%d')
+    #TODAY = datetime.now().strftime('%Y-%m-%d')
+    TODAY = datetime.now(ZoneInfo("Europe/Stockholm")).date().isoformat()
+
     bird_types = ["whteag", "goleag"]
     reigon_dict = SwedenMap().centroid_dict
     weather_df = pd.DataFrame()
