@@ -8,6 +8,7 @@ from datetime import datetime
 from .birds import API_bird_data
 from .weather import *
 from .sweden_map import SwedenMap
+import time
 
 
 def drop_unused_columns(df: pd.DataFrame) -> pd.DataFrame:
@@ -181,8 +182,30 @@ def backfill_weather(start_date: str) -> pd.DataFrame:
     region_dict = map.centroid_dict
     region_df = pd.DataFrame(region_dict.items(), columns=['REGION', 'COORDINATES']) #lat, lon
     full_df = pd.DataFrame()
-    for reg, coord in region_df.iterrows():
-        data, labels = historical_weather_download(start_date=start_date, lon=coord["COORDINATES"][1], lat=coord["COORDINATES"][0])
+
+    cache_dir = "Data/weather_cache"
+    os.makedirs(cache_dir, exist_ok=True)
+
+    for reg, coord in region_df.iterrows():        
+        region = coord['REGION']
+        lat, lon = coord["COORDINATES"]
+
+        cache_path = f"{cache_dir}/weather_{region}_{start_date}.parquet"
+
+        # ---- LOAD FROM CACHE IF EXISTS ----
+        if os.path.exists(cache_path):
+            print(f"Loaded cached weather for region: {region}")
+            cached_df = pd.read_parquet(cache_path)
+            full_df = pd.concat([full_df, cached_df], ignore_index=True)
+            continue
+
+        # ---- DOWNLOAD ----
+        print(f"Downloading weather for region: {region}")
+        data, labels = historical_weather_download(
+            start_date=start_date,
+            lon=lon,
+            lat=lat
+        )
         df_temp = pd.DataFrame(data=data)
         df_temp["REGION"] = coord["REGION"]
         weather_pivoted = df_temp.pivot(index='REGION', columns='daily_units', values='daily')
@@ -200,7 +223,10 @@ def backfill_weather(start_date: str) -> pd.DataFrame:
         # 4. Reset index to turn REGION back into a column
         weather_exploded.reset_index(inplace=True)
         weather_exploded['OBSERVATION DATE'] = weather_exploded['OBSERVATION DATE'].astype(str)
+
+        weather_exploded.to_parquet(cache_path, index=False)
         full_df = pd.concat([full_df, weather_exploded], ignore_index=True)
+        time.sleep(2.5)
     return full_df 
 
         
@@ -235,7 +261,7 @@ def historical():
         parse_dates=['OBSERVATION DATE', 'LAST EDITED DATE'] # Optional: converts dates immediately
     )
     birds = {"whteag": df_whteag,"goleag": df_golden}
-    weather_historic = backfill_weather(start_date="2025-11-01")
+    weather_historic = backfill_weather(start_date="2011-01-01")
     final_bird_dfs = pd.DataFrame()
     for name, df in birds.items():
 
