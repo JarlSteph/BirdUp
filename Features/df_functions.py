@@ -235,7 +235,7 @@ def historical():
         parse_dates=['OBSERVATION DATE', 'LAST EDITED DATE'] # Optional: converts dates immediately
     )
     birds = {"whteag": df_whteag,"goleag": df_golden}
-    weather_historic = backfill_weather(start_date="2025-10-01")
+    weather_historic = backfill_weather(start_date="2025-11-01")
     final_bird_dfs = pd.DataFrame()
     for name, df in birds.items():
 
@@ -348,8 +348,66 @@ def features(days: int = 7) -> pd.DataFrame:
 
     return final_df
     
+def to_hopsworks_df(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Convert a historical bird dataframe into a Hopsworks-compatible format.
+    """
+    df = df.copy()
+
+    # --- column names ---
+    df.columns = (
+        df.columns
+        .str.strip()
+        .str.replace(" ", "_")
+        .str.lower()
+    )
+
+    # --- event time must be datetime ---
+    if "observation_date" in df.columns:
+        df["observation_date"] = pd.to_datetime(df["observation_date"])
+
+    # --- time-of-day must NOT be time64 ---
+    if "time_observations_started" in df.columns:
+        df["time_observations_started"] = (
+            pd.to_datetime(
+                df["time_observations_started"],
+                format="%H:%M:%S",
+                errors="coerce"
+            )
+            .dt.strftime("%H:%M:%S")
+            .fillna("00:00:00")
+        )
+
+    return df
 
 
+def from_hopsworks_df(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Convert a dataframe read from Hopsworks back into the
+    pipeline-friendly (human-readable) format.
+    """
+    df = df.copy()
 
-    
-    
+    # --- restore column naming ---
+    df.columns = (
+        df.columns
+        .str.replace("_", " ")
+        .str.upper()
+    )
+
+    # --- restore datetime where expected ---
+    if "OBSERVATION DATE" in df.columns:
+        df["OBSERVATION DATE"] = pd.to_datetime(df["OBSERVATION DATE"])
+
+    # --- time stays string; just enforce format ---
+    if "TIME OBSERVATIONS STARTED" in df.columns:
+        df["TIME OBSERVATIONS STARTED"] = (
+            pd.to_datetime(
+                df["TIME OBSERVATIONS STARTED"],
+                format="%H:%M:%S",
+                errors="coerce"
+            )
+            .dt.strftime("%H:%M:%S")
+        )
+
+    return df
