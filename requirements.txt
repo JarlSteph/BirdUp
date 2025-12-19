@@ -6,3 +6,6 @@ matplotlib
 scikit-learn
 geopandas
 shapely
+python-dotenv
+pyarrow
+requests
