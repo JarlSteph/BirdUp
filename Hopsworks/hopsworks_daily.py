@@ -25,3 +25,5 @@ def insert_daily_data():
     birding_fg.insert(daily_df, wait=True)
     return
  
+
+ 
