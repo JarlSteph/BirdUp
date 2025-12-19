@@ -243,6 +243,40 @@ def merge_historic_weather(bird_df: pd.DataFrame, weather_df: pd.DataFrame) -> p
         how='left'
     )
 
+def keep_until_yesterday(df: pd.DataFrame) -> pd.DataFrame:
+    df = df.copy()
+    df["OBSERVATION_DATE"] = pd.to_datetime(df["OBSERVATION_DATE"])
+
+    today = pd.Timestamp.now(tz="Europe/Stockholm").normalize()
+    cutoff = today.tz_localize(None)  # make tz-naive to match your df
+    return df[df["OBSERVATION_DATE"] < cutoff]
+
+def add_rolling_sight_features(df: pd.DataFrame, k: int = 3) -> pd.DataFrame:
+    df = df.copy()
+
+    # Ensure types
+    df["OBSERVATION DATE"] = pd.to_datetime(df["OBSERVATION DATE"])
+
+    # Sort so shifts are correct
+    df = df.sort_values(["BIRD TYPE", "REGION", "OBSERVATION DATE"])
+
+    # Binary sighted flag
+    df["SIGHTED"] = (df["OBSERVATION COUNT"] > 0).astype(int)
+
+    # Past k days as lag features
+    g_sighted = df.groupby(["BIRD TYPE", "REGION"])["SIGHTED"]
+    g_count = df.groupby(["BIRD TYPE", "REGION"])["OBSERVATION COUNT"]
+
+    for i in range(1, k + 1):
+        df[f"SIGHTED LAG_{i}"] = g_sighted.shift(i).fillna(0).astype(int)
+        df[f"OBS_COUNT_LAG_{i}"] = g_count.shift(i).fillna(0).astype(int)
+    df = df.drop(columns=["SIGHTED"])
+
+    return df
+
+
+
+
 def historical():
     """
     Get the historical weather and bird obs to add to the Hopsworks dataframe
@@ -288,6 +322,7 @@ def historical():
         final_bird_dfs = pd.concat([final_bird_dfs, df_1h_months], ignore_index=True)
 
     final_bird_dfs.drop(columns=["LATITUDE", "LONGITUDE"], inplace=True)
+    final_bird_dfs = add_rolling_sight_features(final_bird_dfs, k=5)
     final_bird_dfs.columns = final_bird_dfs.columns.str.replace(" ", "_")
 
     return final_bird_dfs
@@ -339,7 +374,7 @@ def daily():
 
 def features(days: int = 7) -> pd.DataFrame:
     """
-    Get the features for the model
+    Get the features for the model, usef for inferecne
     """
     TODAY = datetime.now().strftime('%Y-%m-%d')
     reigon_dict = SwedenMap().centroid_dict
@@ -437,3 +472,55 @@ def from_hopsworks_df(df: pd.DataFrame) -> pd.DataFrame:
         )
 
     return df
+def add_daily_lags_from_hopsworks_simple(today_df: pd.DataFrame, prev_df: pd.DataFrame, k: int = 3) -> pd.DataFrame:
+    today_df = today_df.copy()
+    prev_df = prev_df.copy()
+
+    # Ensure datetime with SAME tz on both
+    prev_df["observation_date"] = pd.to_datetime(prev_df["observation_date"], utc=True)
+    today_df["observation_date"] = pd.to_datetime(today_df["observation_date"], utc=True)
+
+    prev_df = prev_df.sort_values(["bird_type", "region", "observation_date"])
+
+    # exclude today
+    as_of = today_df["observation_date"].max()
+    prev_df = prev_df[prev_df["observation_date"] < as_of]
+
+    prev_df["sighted"] = (prev_df["observation_count"] > 0).astype("int64")
+
+    lastk_sighted = (
+        prev_df.groupby(["bird_type", "region"])["sighted"]
+              .tail(k)
+              .groupby([prev_df["bird_type"], prev_df["region"]])
+              .apply(list)
+              .to_dict()
+    )
+
+    lastk_count = (
+        prev_df.groupby(["bird_type", "region"])["observation_count"]
+              .tail(k)
+              .groupby([prev_df["bird_type"], prev_df["region"]])
+              .apply(list)
+              .to_dict()
+    )
+
+    def get_lags(bt, rg):
+        s = lastk_sighted.get((bt, rg), [])
+        c = lastk_count.get((bt, rg), [])
+
+        s = ([0] * (k - len(s)) + s)[-k:]
+        c = ([0] * (k - len(c)) + c)[-k:]
+
+        out = {}
+        for i in range(1, k + 1):
+            out[f"sighted_lag_{i}"] = s[-i]
+            out[f"obs_count_lag_{i}"] = c[-i]
+        return pd.Series(out)
+
+    rolls = today_df.apply(lambda r: get_lags(r["bird_type"], r["region"]), axis=1)
+
+    for i in range(1, k + 1):
+        today_df[f"sighted_lag_{i}"] = rolls[f"sighted_lag_{i}"].astype("int64")
+        today_df[f"obs_count_lag_{i}"] = rolls[f"obs_count_lag_{i}"].astype("int64")
+
+    return today_df
