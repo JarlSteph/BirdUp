@@ -210,3 +210,5 @@ __marimo__/
 # custom 
 Data
 .DS_Store
+Models/goldag_model
+Models/whteag_model
