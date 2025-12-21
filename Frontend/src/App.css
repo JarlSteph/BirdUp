@@ -86,3 +86,69 @@ input[type="range"] {
   border-top: 1px solid #ddd;
   padding-top: 10px;
 }
+
+@import url('https://fonts.googleapis.com/css2?family=Pirata+One&display=swap');
+
+.sidebar.dangerous {
+  background: linear-gradient(180deg, #1a1a1a 0%, #000000 100%);
+  color: #e0e0e0;
+  border-right: 2px solid #333;
+  padding: 20px;
+}
+
+.sidebar h1 {
+  font-family: 'Pirata One', system-ui;
+  font-size: 3rem;
+  color: #d40000; /* Blood red */
+  text-transform: uppercase;
+  text-shadow: 2px 2px 5px rgba(0,0,0,0.8);
+  margin-bottom: 30px;
+}
+
+.toggle-group button {
+  display: flex;
+  align-items: center;
+  background: #222;
+  border: 1px solid #444;
+  color: #888;
+  padding: 10px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.toggle-group button.active {
+  background: #333;
+  border-color: #d40000;
+  color: #fff;
+  box-shadow: 0 0 10px rgba(212, 0, 0, 0.4);
+}
+
+.bird-img {
+  width: 50px;
+  height: 50px;
+  object-fit: cover;
+  margin-right: 15px;
+  filter: grayscale(100%) contrast(120%);
+}
+
+.active .bird-img {
+  filter: grayscale(0%) drop-shadow(0 0 5px #d40000);
+}
+
+/* Darker, more aggressive tooltips */
+.custom-tooltip {
+  background: #000 !important;
+  border: 1px solid #d40000 !important;
+  color: #fff !important;
+  font-family: 'Pirata One', serif; /* Matching your sidebar font */
+  font-size: 1.1rem;
+}
+
+.leaflet-tooltip-pane .custom-tooltip::before {
+  border-right-color: #d40000 !important;
+}
+
+/* Remove the blue hue from the map container background */
+.leaflet-container {
+  background: #0a0a0a !important;
+}

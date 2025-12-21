@@ -16,7 +16,12 @@ def export_predictions():
     print("Fetching predictions feature group...")
     try:
         fg = fs.get_feature_group(name="bird_sighting_predictions", version=1)
-        df = fg.read()
+        # Try reading with Hive fallback if Arrow Flight fails
+        try:
+            df = fg.read()
+        except:
+             print("Arrow Flight failed, trying Hive...")
+             df = fg.read(read_options={"use_hive": True})
     except Exception as e:
         print(f"Error fetching feature group: {e}")
         return
