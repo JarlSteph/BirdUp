@@ -2,12 +2,9 @@ import React, { useState, useEffect } from 'react';
 import BirdMap from './components/BirdMap';
 import './App.css';
 
-
-
-const goldenSound = new Audio('/sounds/golden.mp3');
-const whiteSound = new Audio('/sounds/white.mp3');
-
-
+// Update paths to be relative
+const goldenSound = new Audio('sounds/golden.mp3');
+const whiteSound = new Audio('sounds/white.mp3');
 
 
 function App() {
@@ -89,7 +86,7 @@ return (
                 goldenSound.currentTime = 0;
                 goldenSound.play(); // Play sound; volume is handled by useEffect
               }}>
-              <img src="/imgs/goldeag.png" alt="Golden Eagle" className="bird-img" />
+              <img src="imgs/goldeag.png" alt="Golden Eagle" className="bird-img" />
               Golden Eagle
             </button>
             <button 
@@ -101,7 +98,7 @@ return (
                 whiteSound.currentTime = 0;
                 whiteSound.play(); // Play sound; volume is handled by useEffect
               }}>
-              <img src="/imgs/whiteeag.png" alt="White-tailed Eagle" className="bird-img" />
+              <img src="imgs/whiteeag.png" alt="White-tailed Eagle" className="bird-img" />
               White-tailed Eagle
             </button>
           </div>
