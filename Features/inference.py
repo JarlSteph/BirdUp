@@ -13,7 +13,7 @@ from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 import matplotlib.pyplot as plt
 from sklearn.metrics import balanced_accuracy_score
 from sklearn.metrics import f1_score
-from tqdm import tqdm_notebook as tqdm
+from tqdm import tqdm
 from dataclasses import dataclass
 
 

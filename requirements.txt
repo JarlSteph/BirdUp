@@ -9,3 +9,4 @@ shapely
 python-dotenv
 pyarrow
 requests
+tqdm
