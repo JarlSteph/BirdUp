@@ -61,10 +61,10 @@ def daily_bird_call(today:str, b_type:str) -> pd.DataFrame:
     daily_df.rename(columns={"obsDt":"OBSERVATION DATE", "lat": "LATITUDE", "lng": "LONGITUDE", "howMany": "OBSERVATION COUNT"}, inplace=True)
     daily_df.drop(columns=["speciesCode","comName", "sciName", "locId", "locName", "obsValid", "obsReviewed", "locationPrivate", "subId"], inplace=True) # what is the howMany column
     
-    daily_df['OBSERVATION DATE'] = pd.to_datetime(daily_df['OBSERVATION DATE']) # Convert to datetime
-    daily_df['TIME OBSERVATIONS STARTED'] = daily_df['OBSERVATION DATE'].dt.strftime('%H:%M:%S') # Extract time as H-M-S
-    daily_df['OBSERVATION DATE'] = daily_df['OBSERVATION DATE'].dt.strftime('%Y-%m-%d') # Keep only date string
-    # filter by day; 
+    dt = pd.to_datetime(daily_df["OBSERVATION DATE"], errors="coerce", format="mixed")
+    daily_df = daily_df.loc[~dt.isna()].copy()
+    daily_df["OBSERVATION DATE"] = dt.dt.strftime("%Y-%m-%d")
+    daily_df["TIME OBSERVATIONS STARTED"] = dt.dt.strftime("%H:%M:%S")
     daily_df = daily_df[daily_df['OBSERVATION DATE'] == today]
     
     # if it is empty, return empty df with cols: ["OBSERVATION COUNT", "LATITUDE", "LONGITUDE", "OBSERVATION DATE", "TIME OBSERVATIONS STARTED"]

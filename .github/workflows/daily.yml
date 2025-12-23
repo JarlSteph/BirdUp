@@ -24,10 +24,15 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: run BirdUp daily insert and inference
+      - name: run BirdUp daily insert
         env:
           HOPSWORKS_API_KEY: ${{ secrets.HOPSWORKS_API_KEY }}
           BIRD_KEY: ${{ secrets.BIRD_KEY }}
-        run: |
-          python push_daily.py
-          python inference_daily.py
+        run: python push_daily.py
+
+      - name: run BirdUp daily inference
+        env:
+          HOPSWORKS_API_KEY: ${{ secrets.HOPSWORKS_API_KEY }}
+          BIRD_KEY: ${{ secrets.BIRD_KEY }}
+        run: python inference_daily.py
+
