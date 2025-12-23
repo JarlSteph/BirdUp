@@ -3,7 +3,7 @@ name: birdup-daily
 on:
   workflow_dispatch:
   schedule:
-    #- cron: '30 21 * * *'   # 21:30 UTC = 22:30/23:30 Sweden (before midnight)
+    - cron: '30 21 * * *'   # 21:30 UTC = 22:30/23:30 Sweden (before midnight)
 
 jobs:
   run_daily_insert:
