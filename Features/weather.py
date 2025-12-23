@@ -5,6 +5,24 @@ import requests
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
+from urllib3.util.retry import Retry
+from requests.adapters import HTTPAdapter
+
+def _session():
+    s = requests.Session()
+    retry = Retry(
+        total=5,
+        connect=5,
+        read=5,
+        backoff_factor=1.5,
+        status_forcelist=(429, 500, 502, 503, 504),
+        allowed_methods=("GET",),
+        raise_on_status=False,
+    )
+    s.mount("https://", HTTPAdapter(max_retries=retry))
+    return s
+
+
 def _today_se_str() -> str:
     return datetime.now(ZoneInfo("Europe/Stockholm")).date().isoformat()
 
@@ -20,7 +38,10 @@ def API_tomorrow_weather(lon:float, lat:float, days:int = 7) -> dict:
         dict: Weather data for tomorrow 
     """
     url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&daily=temperature_2m_mean,precipitation_sum,weather_code,wind_speed_10m_mean&timezone=Europe%2FBerlin&forecast_days={days}"
-    response = requests.get(url)
+    #response = requests.get(url)
+    s = _session()
+    response = s.get(url, timeout=(10, 30))  # 30s read räcker för daily
+    response.raise_for_status()
     if response.status_code == 200: 
         data = response.json()
         return data
