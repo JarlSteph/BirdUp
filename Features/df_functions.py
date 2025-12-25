@@ -351,7 +351,7 @@ def daily():
     random.Random(seed).shuffle(items)
 
     # get wheather for today
-    for name, (lat,lon) in items():
+    for name, (lat,lon) in items:
         weather_dict, COLS = historical_weather_download_actions(start_date=TODAY, lon=lon, lat=lat)
         temp_weather_df = pd.DataFrame([weather_dict])
         temp_weather_df["REGION"] = name
