@@ -11,7 +11,7 @@ from .weather import *
 from .sweden_map import SwedenMap
 import time
 
-import hopsworks
+
 import os
 import random
 
@@ -279,28 +279,7 @@ def add_rolling_sight_features(df: pd.DataFrame, k: int = 3) -> pd.DataFrame:
 
     return df
 
-def _get_latest_weather_by_region():
-    project = hopsworks.login(
-        api_key_value=os.getenv("HOPSWORKS_API_KEY"),
-        project="BirdUp",
-    )
-    fs = project.get_feature_store(name="birdup_featurestore")
-    fg = fs.get_feature_group(name="birding", version=1)
 
-    df_prev = fg.read() 
-
-    df_prev = df_prev[[
-        "region", "observation_date", "wind", "rain", "weathercode", "temperature"
-    ]]
-
-    latest = (
-        df_prev.sort_values("observation_date")
-              .groupby("region")[["temperature", "rain", "wind", "weathercode"]]
-              .tail(1)
-              .set_index("region")
-              .to_dict("index")
-    )
-    return latest
 
 
 
@@ -367,14 +346,13 @@ def daily():
     bird_types = ["whteag", "goleag"]
     reigon_dict = SwedenMap().centroid_dict
     weather_df = pd.DataFrame()
-    latest_weather_by_region = _get_latest_weather_by_region()
     items = list(reigon_dict.items())
     seed = int(TODAY.replace("-", ""))  # t.ex. 20251224
     random.Random(seed).shuffle(items)
 
     # get wheather for today
     for name, (lat,lon) in items():
-        weather_dict, COLS = historical_weather_download_actions(start_date=TODAY, lon=lon, lat=lat, last_known_row=latest_weather_by_region.get(name))
+        weather_dict, COLS = historical_weather_download_actions(start_date=TODAY, lon=lon, lat=lat)
         temp_weather_df = pd.DataFrame([weather_dict])
         temp_weather_df["REGION"] = name
         temp_weather_df["OBSERVATION DATE"] = TODAY
