@@ -11,6 +11,9 @@ from .weather import *
 from .sweden_map import SwedenMap
 import time
 
+import hopsworks
+import os
+
 
 def drop_unused_columns(df: pd.DataFrame) -> pd.DataFrame:
     cols_keep = ["OBSERVATION COUNT", "LATITUDE", "LONGITUDE", "OBSERVATION DATE", "TIME OBSERVATIONS STARTED"]
@@ -275,7 +278,24 @@ def add_rolling_sight_features(df: pd.DataFrame, k: int = 3) -> pd.DataFrame:
 
     return df
 
+def _get_latest_weather_by_region():
+    project = hopsworks.login(
+        api_key_value=os.getenv("HOPSWORKS_API_KEY"),
+        project="BirdUp",
+    )
+    fs = project.get_feature_store(name="birdup_featurestore")
+    fg = fs.get_feature_group(name="birding", version=1)
 
+    df_prev = fg.read()
+
+    # OBS: anpassa kolumnnamn om de är med underscore
+    return (
+        df_prev.sort_values("OBSERVATION_DATE")
+               .groupby("REGION")[["TEMPERATURE", "RAIN", "WIND", "WEATHERCODE"]]
+               .tail(1)
+               .set_index("REGION")
+               .to_dict("index")
+    )
 
 
 def historical():
@@ -340,10 +360,12 @@ def daily():
     bird_types = ["whteag", "goleag"]
     reigon_dict = SwedenMap().centroid_dict
     weather_df = pd.DataFrame()
+    latest_weather_by_region = _get_latest_weather_by_region()
+
     # get wheather for today
     for name, (lat,lon) in reigon_dict.items():
-        weather_dict, COLS = historical_weather_download(start_date=TODAY, lon=lon, lat=lat)
-        temp_weather_df = pd.DataFrame(weather_dict)
+        weather_dict, COLS = historical_weather_download_actions(start_date=TODAY, lon=lon, lat=lat, last_known_row=latest_weather_by_region.get(name))
+        temp_weather_df = pd.DataFrame([weather_dict])
         temp_weather_df["REGION"] = name
         temp_weather_df["OBSERVATION DATE"] = TODAY
         weather_df = pd.concat([weather_df, temp_weather_df], ignore_index=True)

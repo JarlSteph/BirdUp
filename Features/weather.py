@@ -65,4 +65,88 @@ def historical_weather_download(start_date:str, lon:float, lat:float) -> dict:
     else:
         raise Exception(f"API request failed with status code {response.status_code}")
 
-    
+
+def _extract_daily_row_from_open_meteo(payload: dict, obs_date: str) -> dict:
+    """
+    Normaliserar Open-Meteo JSON (archive eller forecast) till en 1-rads dict.
+    Returnerar {} om payload saknar expected struktur.
+    """
+    daily = payload.get("daily") or {}
+    # Open-Meteo brukar ha listor där index 0 motsvarar start_date
+    try:
+        return {
+            "OBSERVATION DATE": obs_date,
+            "TEMPERATURE": (daily.get("temperature_2m_mean") or [None])[0],
+            "RAIN": (daily.get("precipitation_sum") or [None])[0],
+            "WIND": (daily.get("wind_speed_10m_mean") or [None])[0],
+            "WEATHERCODE": (daily.get("weather_code") or [None])[0],
+        }
+    except Exception:
+        return {}
+def historical_weather_download_actions(
+    start_date: str,
+    lon: float,
+    lat: float,
+    last_known_row: dict | None = None,
+    debug: bool = False,
+):
+    """
+    Returnerar (row_dict, COLS) där row_dict alltid har nycklarna i COLS.
+    Försöker: archive -> forecast -> last_known -> None.
+    """
+    s = _session()
+    today = _today_se_str()
+    COLS = ["OBSERVATION DATE", "TEMPERATURE", "RAIN", "WIND", "WEATHERCODE"]
+
+    # 1) ARCHIVE
+    archive_url = (
+        "https://archive-api.open-meteo.com/v1/archive"
+        f"?latitude={lat}&longitude={lon}"
+        f"&start_date={start_date}&end_date={today}"
+        "&daily=temperature_2m_mean,precipitation_sum,wind_speed_10m_mean,weather_code"
+        "&timezone=Europe%2FBerlin"
+    )
+    try:
+        if debug:
+            print("ARCHIVE URL:", archive_url)
+        r = s.get(archive_url, timeout=(10, 30))
+        r.raise_for_status()
+        row = _extract_daily_row(r.json(), obs_date=start_date)
+        return row, COLS
+    except Exception as e:
+        if debug:
+            print("ARCHIVE FAILED:", repr(e))
+
+    # 2) FORECAST (1 dag)
+    forecast_url = (
+        "https://api.open-meteo.com/v1/forecast"
+        f"?latitude={lat}&longitude={lon}"
+        "&daily=temperature_2m_mean,precipitation_sum,weather_code,wind_speed_10m_mean"
+        "&timezone=Europe%2FBerlin"
+        "&forecast_days=1"
+    )
+    try:
+        if debug:
+            print("FORECAST URL:", forecast_url)
+        r = s.get(forecast_url, timeout=(10, 30))
+        r.raise_for_status()
+        row = _extract_daily_row(r.json(), obs_date=start_date)
+        return row, COLS
+    except Exception as e:
+        if debug:
+            print("FORECAST FAILED:", repr(e))
+
+    # 3) LAST KNOWN (från Hopsworks, skickas in)
+    if last_known_row:
+        row = {
+            "OBSERVATION DATE": start_date,
+            "TEMPERATURE": last_known_row.get("TEMPERATURE"),
+            "RAIN": last_known_row.get("RAIN"),
+            "WIND": last_known_row.get("WIND"),
+            "WEATHERCODE": last_known_row.get("WEATHERCODE"),
+        }
+        return row, COLS
+
+    # 4) Fallback None
+    row = {"OBSERVATION DATE": start_date, "TEMPERATURE": None, "RAIN": None, "WIND": None, "WEATHERCODE": None}
+    return row, COLS
