@@ -66,7 +66,7 @@ def historical_weather_download(start_date:str, lon:float, lat:float) -> dict:
         raise Exception(f"API request failed with status code {response.status_code}")
 
 
-def _extract_daily_row_from_open_meteo(payload: dict, obs_date: str) -> dict:
+def _extract_daily_row(payload: dict, obs_date: str) -> dict:
     """
     Normaliserar Open-Meteo JSON (archive eller forecast) till en 1-rads dict.
     Returnerar {} om payload saknar expected struktur.

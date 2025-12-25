@@ -13,6 +13,7 @@ import time
 
 import hopsworks
 import os
+import random
 
 
 def drop_unused_columns(df: pd.DataFrame) -> pd.DataFrame:
@@ -361,9 +362,12 @@ def daily():
     reigon_dict = SwedenMap().centroid_dict
     weather_df = pd.DataFrame()
     latest_weather_by_region = _get_latest_weather_by_region()
+    items = list(reigon_dict.items())
+    seed = int(TODAY.replace("-", ""))  # t.ex. 20251224
+    random.Random(seed).shuffle(items)
 
     # get wheather for today
-    for name, (lat,lon) in reigon_dict.items():
+    for name, (lat,lon) in items():
         weather_dict, COLS = historical_weather_download_actions(start_date=TODAY, lon=lon, lat=lat, last_known_row=latest_weather_by_region.get(name))
         temp_weather_df = pd.DataFrame([weather_dict])
         temp_weather_df["REGION"] = name
