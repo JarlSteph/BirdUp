@@ -353,10 +353,9 @@ def daily():
     # get wheather for today
     for name, (lat,lon) in items:
         weather_dict, COLS = historical_weather_download_actions(start_date=TODAY, lon=lon, lat=lat)
-        temp_weather_df = pd.DataFrame([weather_dict])
-        temp_weather_df["REGION"] = name
-        temp_weather_df["OBSERVATION DATE"] = TODAY
+        temp_weather_df = _flatten_weather_daily(weather_dict, name, TODAY)
         weather_df = pd.concat([weather_df, temp_weather_df], ignore_index=True)
+
 
     # for each bird type, get today's bird data
     ret_df = pd.DataFrame()

@@ -91,6 +91,14 @@ def _safe_daily_values(data: dict):
         return float(t[0]), float(r[0]), float(w[0]), int(c[0])
     except Exception:
         return None
+def _flatten_weather_daily(data: dict, region: str, date: str) -> pd.DataFrame:
+    d = data["daily"]
+    return pd.DataFrame([
+        {"REGION": region, "OBSERVATION DATE": date, "daily_units": "TEMPERATURE", "daily": d["temperature_2m_mean"][0]},
+        {"REGION": region, "OBSERVATION DATE": date, "daily_units": "RAIN",        "daily": d["precipitation_sum"][0]},
+        {"REGION": region, "OBSERVATION DATE": date, "daily_units": "WIND",        "daily": d["wind_speed_10m_mean"][0]},
+        {"REGION": region, "OBSERVATION DATE": date, "daily_units": "WEATHERCODE", "daily": d["weather_code"][0]},
+    ])
 
 def _mean_fallback_as_full_json():
     """
