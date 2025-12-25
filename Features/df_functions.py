@@ -287,14 +287,9 @@ def _get_latest_weather_by_region():
     fs = project.get_feature_store(name="birdup_featurestore")
     fg = fs.get_feature_group(name="birding", version=1)
 
-    df_prev = fg.select([
-        "region",
-        "observation_date",
-        "wind",
-        "rain",
-        "weathercode",
-        "temperature",
-    ]).read()
+    cols = ["region", "observation_date", "wind", "rain", "weathercode", "temperature"]
+    df_prev = fg.select(cols[0], *cols[1:]).read()
+
 
     # senaste rad per region (oavsett datum)
     latest = (
