@@ -287,16 +287,25 @@ def _get_latest_weather_by_region():
     fs = project.get_feature_store(name="birdup_featurestore")
     fg = fs.get_feature_group(name="birding", version=1)
 
-    df_prev = fg.read()
+    df_prev = fg.select([
+        "region",
+        "observation_date",
+        "wind",
+        "rain",
+        "weathercode",
+        "temperature",
+    ]).read()
 
-    # OBS: anpassa kolumnnamn om de är med underscore
-    return (
-        df_prev.sort_values("OBSERVATION_DATE")
-               .groupby("REGION")[["TEMPERATURE", "RAIN", "WIND", "WEATHERCODE"]]
-               .tail(1)
-               .set_index("REGION")
-               .to_dict("index")
+    # senaste rad per region (oavsett datum)
+    latest = (
+        df_prev.sort_values("observation_date")
+              .groupby("region")[["temperature", "rain", "wind", "weathercode"]]
+              .tail(1)
+              .set_index("region")
+              .to_dict("index")
     )
+    return latest
+
 
 
 def historical():
