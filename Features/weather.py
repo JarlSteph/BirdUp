@@ -2,6 +2,9 @@
 To extract the HISTORICAL weather data & to API call the new weather data
 """
 import requests
+import pandas as pd
+import time as pytime
+
 from datetime import datetime, time, timedelta
 from zoneinfo import ZoneInfo
 
@@ -72,38 +75,54 @@ _running_weather_means = {
     "wind_speed_10m_mean": [],
     "weather_code": [],
 }
-def _mean_fallback():
-    def mean_or_zero(x):
-        return float(sum(x) / len(x)) if len(x) > 0 else 0.0
+def _safe_daily_values(data: dict):
+    """
+    Plockar ut första dagens värden ur data["daily"] om det finns.
+    Returnerar None om det saknas.
+    """
+    d = (data or {}).get("daily") or {}
+    try:
+        t = d.get("temperature_2m_mean")
+        r = d.get("precipitation_sum")
+        w = d.get("wind_speed_10m_mean")
+        c = d.get("weather_code")
+        if not (t and r and w and c):
+            return None
+        return float(t[0]), float(r[0]), float(w[0]), int(c[0])
+    except Exception:
+        return None
+
+def _mean_fallback_as_full_json():
+    """
+    Skapar en 'data'-dict som liknar Open-Meteo-svaret (med daily),
+    så din downstreamkod inte behöver ändras.
+    """
+    def mean_or(default, xs):
+        return sum(xs) / len(xs) if xs else default
+
+    t = mean_or(0.0, _running_weather_means["temperature_2m_mean"])
+    r = mean_or(0.0, _running_weather_means["precipitation_sum"])
+    w = mean_or(0.0, _running_weather_means["wind_speed_10m_mean"])
+    c = int(round(mean_or(0, _running_weather_means["weather_code"])))
 
     return {
-        "temperature_2m_mean": [mean_or_zero(_running_weather_means["temperature_2m_mean"])],
-        "precipitation_sum":   [mean_or_zero(_running_weather_means["precipitation_sum"])],
-        "wind_speed_10m_mean": [mean_or_zero(_running_weather_means["wind_speed_10m_mean"])],
-        "weather_code":        [int(mean_or_zero(_running_weather_means["weather_code"]))],
-    }
-
-
-def _safe_weather_dict():
-    # Minimal fallback så pd.DataFrame(weather_dict) alltid funkar
-    # och merge_weather_data inte dör på NaN/None.
-    return {
-        "temperature_2m_mean": [0.0],
-        "precipitation_sum": [0.0],
-        "wind_speed_10m_mean": [0.0],
-        "weather_code": [0],
+        "daily": {
+            "temperature_2m_mean": [t],
+            "precipitation_sum": [r],
+            "wind_speed_10m_mean": [w],
+            "weather_code": [c],
+        }
     }
 
 def historical_weather_download_actions(start_date: str, lon: float, lat: float,
                                         retries: int = 3, sleep_s: float = 2.0):
     """
-    Drop-in ersättare för historical_weather_download.
-    Returnerar samma tuple: (data, COLS)
+    Drop-in ersättare: returnerar (data, COLS) exakt som din original-funktion.
+    Archive -> Forecast -> mean fallback, utan att krascha.
     """
+    TODATE = _today_se_str()
 
-    # --- 1) ARCHIVE (samma som din) ---
-    TODATE = _today_se_str()  # samma som du kör i Actions
-    url = (
+    archive_url = (
         "https://archive-api.open-meteo.com/v1/archive"
         f"?latitude={lat}&longitude={lon}"
         f"&start_date={start_date}&end_date={TODATE}"
@@ -111,36 +130,35 @@ def historical_weather_download_actions(start_date: str, lon: float, lat: float,
         "&timezone=Europe%2FBerlin"
     )
 
+    # 1) ARCHIVE
     for attempt in range(1, retries + 1):
         try:
-            print("WEATHER URL:", url)
+            print("WEATHER URL:", archive_url)
             print("REQUEST START:", datetime.now())
-            response = requests.get(url, timeout=(10, 60))
-            print("REQUEST END:", datetime.now(), "status", response.status_code)
+            resp = requests.get(archive_url, timeout=(10, 60))
+            print("REQUEST END:", datetime.now(), "status", resp.status_code)
+            resp.raise_for_status()
 
-            response.raise_for_status()
-            data = response.json()
-            _running_weather_means["temperature_2m_mean"].append(
-                float(data["temperature_2m_mean"][0])
-            )
-            _running_weather_means["precipitation_sum"].append(
-                float(data["precipitation_sum"][0])
-            )
-            _running_weather_means["wind_speed_10m_mean"].append(
-                float(data["wind_speed_10m_mean"][0])
-            )
-            _running_weather_means["weather_code"].append(
-                int(data["weather_code"][0])
-            )
+            data = resp.json()
+
+            vals = _safe_daily_values(data)
+            if vals is None:
+                raise KeyError("daily missing/empty in archive response")
+
+            t, r, w, c = vals
+            _running_weather_means["temperature_2m_mean"].append(t)
+            _running_weather_means["precipitation_sum"].append(r)
+            _running_weather_means["wind_speed_10m_mean"].append(w)
+            _running_weather_means["weather_code"].append(c)
 
             return data, COLS
 
         except Exception as e:
             print(f"ARCHIVE FAIL attempt {attempt}/{retries}: {type(e).__name__}: {e}")
-            time.sleep(sleep_s * attempt)
+            pytime.sleep(sleep_s * attempt)
 
-    # --- 2) FORECAST fallback (packas om till samma "enkla dict") ---
-    f_url = (
+    # 2) FORECAST
+    forecast_url = (
         "https://api.open-meteo.com/v1/forecast"
         f"?latitude={lat}&longitude={lon}"
         "&daily=temperature_2m_mean,precipitation_sum,wind_speed_10m_mean,weather_code"
@@ -149,41 +167,32 @@ def historical_weather_download_actions(start_date: str, lon: float, lat: float,
 
     for attempt in range(1, retries + 1):
         try:
-            print("FORECAST URL:", f_url)
+            print("FORECAST URL:", forecast_url)
             print("FORECAST START:", datetime.now())
-            r = requests.get(f_url, timeout=(10, 60))
-            print("FORECAST END:", datetime.now(), "status", r.status_code)
+            resp = requests.get(forecast_url, timeout=(10, 60))
+            print("FORECAST END:", datetime.now(), "status", resp.status_code)
+            resp.raise_for_status()
 
-            r.raise_for_status()
-            j = r.json()
-            d = j.get("daily", {})
+            data = resp.json()
 
-            # VIKTIGT: vi returnerar en dict som ser ut som archive-nycklarna,
-            # inte hela forecast-jsonen.
-            out = {
-                "temperature_2m_mean": [ (d.get("temperature_2m_mean") or [0.0])[0] ],
-                "precipitation_sum":   [ (d.get("precipitation_sum")   or [0.0])[0] ],
-                "wind_speed_10m_mean": [ (d.get("wind_speed_10m_mean") or [0.0])[0] ],
-                "weather_code":        [ (d.get("weather_code")        or [0])[0] ],
-            }
-            _running_weather_means["temperature_2m_mean"].append(
-                    float(out["temperature_2m_mean"][0])
-                )
-            _running_weather_means["precipitation_sum"].append(
-                float(out["precipitation_sum"][0])
-            )
-            _running_weather_means["wind_speed_10m_mean"].append(
-                float(out["wind_speed_10m_mean"][0])
-            )
-            _running_weather_means["weather_code"].append(
-                int(out["weather_code"][0])
-            )
-            return out, COLS
+            vals = _safe_daily_values(data)
+            if vals is None:
+                raise KeyError("daily missing/empty in forecast response")
+
+            t, r, w, c = vals
+            _running_weather_means["temperature_2m_mean"].append(t)
+            _running_weather_means["precipitation_sum"].append(r)
+            _running_weather_means["wind_speed_10m_mean"].append(w)
+            _running_weather_means["weather_code"].append(c)
+
+            # OBS: vi returnerar fortfarande hela data-jsonen
+            return data, COLS
 
         except Exception as e:
             print(f"FORECAST FAIL attempt {attempt}/{retries}: {type(e).__name__}: {e}")
-            time.sleep(sleep_s * attempt)
+            pytime.sleep(sleep_s * attempt)
 
-    # --- 3) sista fallback: krascha inte ---
-    print("WEATHER FALLBACK: returning safe defaults")
-    return _mean_fallback(), COLS
+    # 3) Mean fallback: returnera en data-dict som har daily-nycklar
+    print("WEATHER FALLBACK: returning running-mean defaults")
+    data = _mean_fallback_as_full_json()
+    return data, COLS
