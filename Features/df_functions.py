@@ -91,22 +91,33 @@ def map_bird_region(df: pd.DataFrame) -> pd.DataFrame:
 def merge_weather_data(bird_df: pd.DataFrame, weather_df: pd.DataFrame) -> pd.DataFrame:
     # 1. Pivot weather_df so variables (Temp, Rain, etc.) become columns
     # Assumes 'daily' column contains actual lists. If strings, use ast.literal_eval first.
-    weather_pivoted = weather_df.pivot(index='REGION', columns='daily_units', values='daily')
+    if "OBSERVATION DATE" in weather_df.columns and "daily_units" in weather_df.columns:
+        weather_exploded = (
+            weather_df
+            .pivot(
+                index=["REGION", "OBSERVATION DATE"],
+                columns="daily_units",
+                values="daily"
+            )
+            .reset_index()
+        )
+    else:
+        weather_pivoted = weather_df.pivot(index='REGION', columns='daily_units', values='daily')
 
-    # 2. Explode the lists into individual rows (pandas >= 1.3.0)
-    weather_exploded = weather_pivoted.explode(list(weather_pivoted.columns))
+        # 2. Explode the lists into individual rows (pandas >= 1.3.0)
+        weather_exploded = weather_pivoted.explode(list(weather_pivoted.columns))
 
-    # 3. Rename columns to match requirements
-    weather_exploded.rename(columns={
-        'iso8601': 'OBSERVATION DATE',
-        '°C': 'TEMPERATURE',
-        'mm': 'RAIN',
-        'km/h': 'WIND',
-        'wmo code': 'WEATHERCODE'
-    }, inplace=True)
-    
-    # 4. Reset index to turn REGION back into a column
-    weather_exploded.reset_index(inplace=True)
+        # 3. Rename columns to match requirements
+        weather_exploded.rename(columns={
+            'iso8601': 'OBSERVATION DATE',
+            '°C': 'TEMPERATURE',
+            'mm': 'RAIN',
+            'km/h': 'WIND',
+            'wmo code': 'WEATHERCODE'
+        }, inplace=True)
+        
+        # 4. Reset index to turn REGION back into a column
+        weather_exploded.reset_index(inplace=True)
 
     # 5. Ensure date formats match for merging
     bird_df['OBSERVATION DATE'] = bird_df['OBSERVATION DATE'].astype(str)
