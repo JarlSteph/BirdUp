@@ -353,7 +353,7 @@ def daily():
     # get wheather for today
     for name, (lat,lon) in items:
         weather_dict, COLS = historical_weather_download_actions(start_date=TODAY, lon=lon, lat=lat)
-        temp_weather_df = _flatten_weather_daily(weather_dict, name, TODAY)
+        temp_weather_df = flatten_weather_daily(weather_dict, name, TODAY)
         weather_df = pd.concat([weather_df, temp_weather_df], ignore_index=True)
 
 
