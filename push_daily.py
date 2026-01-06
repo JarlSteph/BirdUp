@@ -43,6 +43,20 @@ def insert_daily_data():
 
     daily_df = df_functions.to_hopsworks_df(daily_df)
     day_df_lag = df_functions.add_daily_lags_from_hopsworks_simple(daily_df, df_prev, k=5)
+    # after day_df_lag is created, before insert
+    day_df_lag["observation_count"] = (
+        pd.to_numeric(day_df_lag["observation_count"], errors="coerce")
+        .fillna(0)
+        .astype("int64")
+    )
+
+    day_df_lag["weathercode"] = (
+        pd.to_numeric(day_df_lag["weathercode"], errors="coerce")
+        .fillna(0)
+        .astype("int64")
+    )
+    print(day_df_lag[["observation_count","weathercode"]].dtypes)
+
     birding_fg.insert(day_df_lag, wait=True)
     return
 insert_daily_data()
