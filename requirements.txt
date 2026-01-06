@@ -1,5 +1,5 @@
 pandas
-hopsworks==4.4.2
+hopsworks[python]==4.4.2
 torch
 numpy
 matplotlib
