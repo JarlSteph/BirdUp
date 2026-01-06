@@ -1,6 +1,5 @@
 pandas
 hopsworks==4.4.2
-hsfs
 torch
 numpy
 matplotlib
