@@ -22,7 +22,14 @@ def insert_daily_data():
     daily_df = df_functions.daily()
     print(type(birding_fg.features[0]), birding_fg.features[0])
 
-    cols = [f["name"] for f in birding_fg.features]
+    features = birding_fg.features
+    first = features[0]
+
+    if hasattr(first, "name"):          # hsfs.feature.Feature
+        cols = [f.name for f in features]
+    else:                               # dict-like
+        cols = [f["name"] for f in features]
+
     df_prev = birding_fg.select(cols).read()
 
     daily_df = df_functions.to_hopsworks_df(daily_df)
