@@ -28,7 +28,7 @@ def insert_daily_data():
 
     cols = [f.name for f in birding_fg.schema] 
     print("all strings:", all(isinstance(c, str) for c in cols))
-    print("hsfs:", hsfs.__version__)
+
     print("hopsworks:", hopsworks.__version__)
 
     print("types in cols:", sorted(set(type(c) for c in cols)))
