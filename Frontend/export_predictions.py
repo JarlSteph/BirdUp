@@ -22,6 +22,9 @@ def export_predictions():
         except:
              print("Arrow Flight failed, trying Hive...")
              df = fg.read(read_options={"use_hive": True})
+        df["observation_date"] = pd.to_datetime(df["observation_date"])
+        print("FG date range:", df["observation_date"].min(), "->", df["observation_date"].max())
+        print("rows:", len(df))
     except Exception as e:
         print(f"Error fetching feature group: {e}")
         return
