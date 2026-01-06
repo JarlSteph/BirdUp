@@ -26,12 +26,15 @@ def insert_daily_data():
     features = birding_fg.features
     first = features[0]
 
-    if hasattr(first, "name"):          # hsfs.feature.Feature
-        cols = [f.name for f in features]
-    else:                               # dict-like
-        cols = [f["name"] for f in features]
+    cols = [f.name for f in birding_fg.schema] 
     print("all strings:", all(isinstance(c, str) for c in cols))
-    print(cols[:5])
+    print("hsfs:", hsfs.__version__)
+    print("hopsworks:", hopsworks.__version__)
+
+    print("types in cols:", sorted(set(type(c) for c in cols)))
+    print("first 5 cols:", cols[:5])
+    print("all strings:", all(isinstance(c, str) for c in cols))
+
     birding_fg.select(["region"]).read()
 
 

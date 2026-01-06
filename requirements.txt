@@ -1,5 +1,6 @@
 pandas
-hopsworks
+hopsworks==4.4.2
+hsfs==4.4.2
 torch
 numpy
 matplotlib
@@ -7,6 +8,6 @@ scikit-learn
 geopandas
 shapely
 python-dotenv
-pyarrow
+pyarrow==22.0.0
 requests
 tqdm
