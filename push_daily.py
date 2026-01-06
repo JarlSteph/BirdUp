@@ -15,7 +15,26 @@ load_dotenv()
 HOPSWORKS_API_KEY = os.getenv("HOPSWORKS_API_KEY")
 project = hopsworks.login(api_key_value=HOPSWORKS_API_KEY, project="BirdUp")
 fs = project.get_feature_store(name='birdup_featurestore')
+def enforce_fg_types(df: pd.DataFrame) -> pd.DataFrame:
+    df = df.copy()
 
+    # ints that MUST be ints
+    for c in ["observation_count", "weathercode"]:
+        if c in df.columns:
+            df[c] = pd.to_numeric(df[c], errors="coerce").fillna(0).astype("int64")
+
+    # numeric continuous
+    for c in ["temperature", "rain", "wind"]:
+        if c in df.columns:
+            df[c] = pd.to_numeric(df[c], errors="coerce").astype("float64")
+
+    # months: keep bool if your FG was created with bools; otherwise cast to int
+    for c in [col for col in df.columns if col.startswith("month_")]:
+        # if they are True/False already, keep them
+        if df[c].dtype != "bool":
+            df[c] = df[c].fillna(False).astype("bool")
+
+    return df
 
 def insert_daily_data():
     # retrive todays data: 
@@ -56,6 +75,7 @@ def insert_daily_data():
         .astype("int64")
     )
     print(day_df_lag[["observation_count","weathercode"]].dtypes)
+    day_df_lag = enforce_fg_types(day_df_lag)
 
     birding_fg.insert(day_df_lag, wait=True)
     return
