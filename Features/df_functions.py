@@ -292,7 +292,17 @@ def add_rolling_sight_features(df: pd.DataFrame, k: int = 3) -> pd.DataFrame:
     return df
 
 
-
+def nearest_region(name, coords, succeeded_names):
+    lat0, lon0 = coords[name]
+    best = None
+    best_d2 = float("inf")
+    for other in succeeded_names:
+        lat1, lon1 = coords[other]
+        d2 = (lat0 - lat1)**2 + (lon0 - lon1)**2
+        if d2 < best_d2:
+            best_d2 = d2
+            best = other
+    return best
 
 
 
@@ -403,33 +413,62 @@ def features(days: int = 7) -> pd.DataFrame:
     TODAY = datetime.now().strftime('%Y-%m-%d')
     reigon_dict = SwedenMap().centroid_dict
     weather_df = pd.DataFrame()
+    success_region_df = {}
+    ok, fail = 0, 0
+    failed_regions = []
     # get wheather for today
     ret_df = pd.DataFrame()
     for name, (lat,lon) in reigon_dict.items():
-        weather_dict = API_tomorrow_weather(days=days, lon=lon, lat=lat)
-        temp_weather_df = pd.DataFrame(weather_dict)
-        temp_weather_df["REGION"] = name
-        
-        weather_pivoted = temp_weather_df.pivot(index='REGION', columns='daily_units', values='daily')
-        weather_exploded = weather_pivoted.explode(list(weather_pivoted.columns))
+        try:
+            weather_dict = API_tomorrow_weather(days=days, lon=lon, lat=lat)
+            temp_weather_df = pd.DataFrame(weather_dict)
+            temp_weather_df["REGION"] = name
+            
+            weather_pivoted = temp_weather_df.pivot(index='REGION', columns='daily_units', values='daily')
+            weather_exploded = weather_pivoted.explode(list(weather_pivoted.columns))
 
-        # 3. Rename columns to match requirements
-        weather_exploded.rename(columns={
-            'iso8601': 'OBSERVATION DATE',
-            '°C': 'TEMPERATURE',
-            'mm': 'RAIN',
-            'km/h': 'WIND',
-            'wmo code': 'WEATHERCODE'
-        }, inplace=True)
-        weather_exploded["REGION"] = name
-        ret_df = pd.concat([ret_df, weather_exploded], ignore_index=True)
+            # 3. Rename columns to match requirements
+            weather_exploded.rename(columns={
+                'iso8601': 'OBSERVATION DATE',
+                '°C': 'TEMPERATURE',
+                'mm': 'RAIN',
+                'km/h': 'WIND',
+                'wmo code': 'WEATHERCODE'
+            }, inplace=True)
+            weather_exploded["REGION"] = name
+            success_region_df[name] = weather_exploded
+            ret_df = pd.concat([ret_df, weather_exploded], ignore_index=True)
+            ok += 1
+        except Exception as e:
+            fail += 1
+            failed_regions.append(name)
+            print(f"[weather] FAILED {name}: {e}")
+    print(f"[weather] regions ok={ok}/{len(reigon_dict)} fail={fail}")
+    if failed_regions:
+        if not success_region_df:
+            raise RuntimeError("All weather calls failed; cannot fill holes.")
 
+        success_regions = list(success_region_df.keys())
+        print(f"[weather] ok={len(success_regions)}/{len(reigon_dict)} fail={len(failed_regions)}")
+
+        for name in failed_regions:
+            nn = nearest_region(name, reigon_dict, success_regions)
+            print(f"[weather] fallback {name} <- {nn}")
+
+            df_copy = success_region_df[nn].copy()
+            df_copy["REGION"] = name  # IMPORTANT: override region label
+            ret_df = pd.concat([ret_df, df_copy], ignore_index=True)
     one_h = one_hot_months(ret_df)
     final_df = add_normalized_year(one_h, start_year=2011)
     final_df['OBSERVATION DATE'] = (
     pd.to_datetime(final_df['OBSERVATION DATE'])
       .dt.strftime('%Y-%m-%d'))
     final_df.columns = final_df.columns.str.replace(" ", "_")
+    expected = set(SwedenMap().centroid_dict.keys())
+    got = set(final_df["REGION"].unique())
+    missing = expected - got
+    if missing:
+        raise RuntimeError(f"Weather features missing regions: {sorted(missing)}")
 
     return final_df
     
