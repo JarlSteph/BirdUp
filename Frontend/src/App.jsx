@@ -10,10 +10,12 @@ const whiteSound = new Audio('sounds/white.mp3');
 function App() {
   const [geoJson, setGeoJson] = useState(null);
   const [allPredictions, setAllPredictions] = useState(null);
+  const [performanceData, setPerformanceData] = useState(null);
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedBird, setSelectedBird] = useState('goleag'); // 'goleag' or 'whteag'
   const [availableDates, setAvailableDates] = useState([]);
   const [isMuted, setIsMuted] = useState(false);
+  const [showStats, setShowStats] = useState(false);
 
   // Instantly set volume to 0 when isMuted changes
   useEffect(() => {
@@ -43,15 +45,35 @@ function App() {
         }
       })
       .catch(err => console.error("Error loading predictions", err));
+
+    // Fetch Performance Data
+    fetch('performance.json')
+      .then(res => res.json())
+      .then(data => setPerformanceData(data))
+      .catch(err => console.error("Error loading performance stats", err));
   }, []);
 
   const currentPredictions = allPredictions && selectedDate && allPredictions[selectedDate] && allPredictions[selectedDate][selectedBird]
     ? allPredictions[selectedDate][selectedBird]
     : {};
 
-  
+  const calculateMetrics = (cm) => {
+    // cm = [[tn, fp], [fn, tp]]
+    const tn = cm[0][0];
+    const fp = cm[0][1];
+    const fn = cm[1][0];
+    const tp = cm[1][1];
+    
+    const precision = tp + fp > 0 ? tp / (tp + fp) : 0;
+    const recall = tp + fn > 0 ? tp / (tp + fn) : 0;
+    const specificity = tn + fp > 0 ? tn / (tn + fp) : 0;
+    const f1 = precision + recall > 0 ? 2 * (precision * recall) / (precision + recall) : 0;
+    const balancedAcc = (recall + specificity) / 2;
+    
+    return { precision, recall, f1, balancedAcc, tn, fp, fn, tp };
+  };
 
-return (
+  return (
     <div className="App">
       <div className="sidebar dangerous">
         <div className="header-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -121,11 +143,69 @@ return (
         </div>
         
         <div className="info">
-          <p>Visualizing lethal sighting probabilities for the coming week.</p>
-          <p>Data updated daily via Hopsworks Feature Store.</p>
+          <p><strong>BirdUp</strong> forecasts daily sighting probabilities for Golden and White-tailed Eagles across Sweden's 25 provinces.</p>
+          <p>Our PyTorch neural networks analyze historical patterns and daily weather metrics to predict bird presence for the coming week.</p>
+          <p>Data pipeline and models are managed via the <strong>Hopsworks Feature Store</strong>, with daily inference updates.</p>
+          <p>Data powered by <a href="https://ebird.org/home">Ebird</a></p>
         </div>
       </div>
       
+      {/* Right-side Stats Panel */}
+      <div className={`stats-sidebar ${showStats ? 'open' : ''}`}>
+        <button className="close-stats" onClick={() => setShowStats(false)}>×</button>
+        <h2>Live Hindcast Performance</h2>
+        <p className="stats-intro">Real-time confusion matrix based on recent predictions vs actual observations.</p>
+        
+        {performanceData ? (
+          Object.keys(performanceData).map(bird => {
+            const data = performanceData[bird];
+            const metrics = calculateMetrics(data.cm);
+            const birdName = bird === 'goleag' ? 'Golden Eagle' : 'White-tailed Eagle';
+            
+            return (
+              <div key={bird} className="bird-stats">
+                <h3>{birdName}</h3>
+                <div className="meta-info">
+                  <span>Samples: {data.total_samples}</span>
+                  <span>Updated: {data.last_updated}</span>
+                </div>
+                
+                <div className="confusion-matrix">
+                  <div className="cm-header"></div>
+                  <div className="cm-header">Pred 0</div>
+                  <div className="cm-header">Pred 1</div>
+                  
+                  <div className="cm-label">Actual 0</div>
+                  <div className="cm-cell tn" title="True Negative">{metrics.tn}</div>
+                  <div className="cm-cell fp" title="False Positive">{metrics.fp}</div>
+                  
+                  <div className="cm-label">Actual 1</div>
+                  <div className="cm-cell fn" title="False Negative">{metrics.fn}</div>
+                  <div className="cm-cell tp" title="True Positive">{metrics.tp}</div>
+                </div>
+
+                <div className="metrics-grid" style={{ justifyContent: 'space-around' }}>
+                  <div className="metric">
+                    <span className="label">Bal. Accuracy</span>
+                    <span className="value">{metrics.balancedAcc.toFixed(3)}</span>
+                  </div>
+                  <div className="metric">
+                    <span className="label">F1 Score</span>
+                    <span className="value">{metrics.f1.toFixed(3)}</span>
+                  </div>
+                </div>
+              </div>
+            );
+          })
+        ) : (
+          <p>Loading stats...</p>
+        )}
+      </div>
+
+      <button className="stats-toggle" onClick={() => setShowStats(!showStats)}>
+        📊 HINDCAST
+      </button>
+
       <div className="map-container">
         <BirdMap geoJson={geoJson} predictions={currentPredictions} />
       </div>

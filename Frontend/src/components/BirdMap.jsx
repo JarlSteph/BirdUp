@@ -31,7 +31,7 @@ const BirdMap = ({ geoJson, predictions }) => {
     
     // Custom tooltip styling (requires CSS)
     layer.bindTooltip(
-        `<div class="dangerous-tooltip"><strong>${regionName}</strong><br/>Threat Level: ${text}</div>`,
+        `<div class="dangerous-tooltip"><strong>${regionName}</strong><br/>Predicted Probability: ${text}</div>`,
         { sticky: true, className: 'custom-tooltip' }
     );
   };
