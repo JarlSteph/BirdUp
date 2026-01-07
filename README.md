@@ -1,4 +1,5 @@
 # BirdUp – Scalable Bird Sighting Prediction System
+*https://jarlsteph.github.io/BirdUp/*
 
 ## Final Project
 **Course:** ID2223 / FID3020 HT25 – Scalable Machine Learning and Deep Learning  
@@ -111,24 +112,38 @@ Trained models are stored and versioned in the **Hopsworks Model Registry**, all
 
 ---
 
-## Model Training
+# Model Pipeline
 
-We train a feed-forward neural network (`BirdPercentModel`) using PyTorch. Separate models are trained for each species.
+This project utilizes a **Neural Network** architecture framed as a binary classification task: predicting whether a specific bird species will be observed.
 
-### Training Code
-```python
-goldag_model = BirdPercentModel(in_features=g_train_x.shape[1], hidden_layers=[32, 16, 1]).to(device=device)
-goldag_model = train_model(
-    g_train_x, g_train_y, g_val_x, g_val_y,
-    goldag_model, num_epochs=6000, learning_rate=0.01, val=False
-)
+### Architecture
+* **Problem Type**: Binary Classification.
+* **Loss Function**: Binary Cross Entropy (BCE).
+* **Output Layer**: Sigmoid activation.
+* **Hidden Layers**: ReLU activation to introduce non-linearity.
 
-whteag_model = BirdPercentModel(in_features=w_train_x.shape[1], hidden_layers=[64, 32, 1]).to(device=device)
-whteag_model = train_model(
-    w_train_x, w_train_y, w_val_x, w_val_y,
-    whteag_model, num_epochs=10000, learning_rate=0.01, val=False
-)
-```
+### Hyperparameter Search
+A grid search was performed on the validation set to determine the optimal:
+* Number of hidden layers
+* Hidden-layer width
+* Number of epochs
+* Learning rate
+
+The optimization objective was **balanced accuracy** to ensure robust performance across both True Positives (TP) and True Negatives (TN). 
+The Golden Eagle dataset exhibited a severe skew toward negative samples. To mitigate this and improve model performance, 20% of the negative samples were dropped during training.
+
+### Final Configurations
+
+| Species | Epochs | Learning Rate | Hidden Layers |
+| :--- | :--- | :--- | :--- |
+| **White-tailed Eagle** | 10,000 | 0.01 | [64, 32, 1] |
+| **Golden Eagle** | 6,000 | 0.01 | [32, 16, 1] |
+
+---
+
+* **Training Logic**: `Models/train.ipynb`
+* **Neural Network Definition**: `Models/Bird_percent.py`
+
 ## Model Performance Summary 
 
 The table below summarizes evaluation metrics for the trained models as recorded in the Hopsworks Model Registry. Metrics are computed using hindcasting on historical data and account for class imbalance.
@@ -175,8 +190,6 @@ Golden eagle sightings are rare, resulting in extreme class imbalance. The model
 
 ---
 
-
-
 After training, the model weights are uploaded to the **Hopsworks Model Registry** and versioned for later use in inference.
 
 ---
@@ -211,6 +224,7 @@ The frontend visualizes:
 - predicted sighting probabilities per region
 - species-specific predictions
 - the practical value of the ML pipeline outputs
+- A hindcast Confusion Matrix for the predicted values
 
 <img width="1470" height="776" alt="image" src="https://github.com/user-attachments/assets/0b192bdd-da6d-453c-a87a-92a184096362" />
 
@@ -238,8 +252,3 @@ BirdUp demonstrates a complete scalable machine learning workflow:
 - Frontend visualization of predictions via Github Pages
 
 This project fulfills all requirements for the ID2223 / FID3020 final project.
-
-
-to run it locally, do: 
-
-***cd Frontend && npm run rev***
