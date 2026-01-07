@@ -126,7 +126,7 @@ whteag_model = train_model(
     w_train_x, w_train_y, w_val_x, w_val_y,
     whteag_model, num_epochs=10000, learning_rate=0.01, val=False
 )
-
+```
 
 After training, the model weights are uploaded to the **Hopsworks Model Registry** and versioned for later use in inference.
 
