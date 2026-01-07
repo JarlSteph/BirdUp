@@ -1,6 +1,9 @@
 # BirdUp – Scalable Bird Sighting Prediction System
 *https://jarlsteph.github.io/BirdUp/*
 
+<img width="1900" height="1070" alt="image" src="https://github.com/user-attachments/assets/f38a5281-50fa-4f96-ac9b-6c71564fed94" />
+
+
 ## Final Project
 **Course:** ID2223 / FID3020 HT25 – Scalable Machine Learning and Deep Learning  
 **Project type:** Final Project  
@@ -218,6 +221,7 @@ The prediction output includes:
 
 ## Frontend
 
+*https://jarlsteph.github.io/BirdUp/*
 A frontend application is included in the repository under the `Frontend/` directory.
 
 The frontend visualizes:
@@ -225,9 +229,6 @@ The frontend visualizes:
 - species-specific predictions
 - the practical value of the ML pipeline outputs
 - A hindcast Confusion Matrix for the predicted values
-
-<img width="1470" height="776" alt="image" src="https://github.com/user-attachments/assets/0b192bdd-da6d-453c-a87a-92a184096362" />
-
 
 ---
 
