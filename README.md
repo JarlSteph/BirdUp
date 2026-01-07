@@ -14,10 +14,10 @@
 
 BirdUp is an end-to-end, scalable machine learning system for predicting **daily bird sighting probabilities** across Swedish administrative regions (*landskap*). The project focuses on two eagle species:
 
-- **White-tailed eagle** (`whteag`)
-- **Golden eagle** (`goleag`)
+- **White-tailed eagle** 
+- **Golden eagle** 
 
-The system integrates dynamic data ingestion, feature engineering, neural network training, model versioning, daily inference, and a frontend for visualization.
+The system integrates dynamic data ingestion, feature engineering, neural network training, daily inference, and a frontend for visualization.
 
 ---
 
@@ -45,7 +45,7 @@ Bird observations are collected from **eBird**, a global citizen-science platfor
 
 Label construction:
 - If sightings exist, we record the **number of birds observed**
-- If no sightings exist, the day is treated as a **negative observation**
+- If no sightings exist, the day is treated as a **negative observation**, but stilled logged.
 
 This allows the model to learn from both presence and absence of sightings.
 
@@ -72,9 +72,11 @@ Separate models are trained for each species to capture species-specific spatial
 
 All data sources are merged into a single daily feature table per region and bird type.
 
+The regions are encoded to be numbers, and to have a ordinal relationship we sort them by number of sightings in our dataset to achieve their number.
+
 ### Primary Keys
 - `region` – Swedish administrative region (*landskap*)
-- `observation_date` – calendar date (event time)
+- `observation_date` – calendar date 
 - `bird_type` – species identifier
 
 ### Weather Features
@@ -87,7 +89,7 @@ All data sources are merged into a single daily feature table per region and bir
 - `observation_count` – number of birds observed
 - `time_observations_started` – start time of observation effort
 
-### Temporal Encoding
+### Time Encoding
 - **Year rebasing:**  
   The year is normalized such that 2011 = 0 and increases incrementally each year.
 - **Month one-hot encoding:**  
@@ -139,10 +141,11 @@ Each day, the system performs the following steps:
 1. Collect new weather data
 2. Collect new bird observations
 3. Generate feature-compatible rows and update lag features
-4. Download trained models from the Hopsworks Model Registry
-5. Load model weights into the PyTorch architectures
-6. Perform inference per region and bird type
-7. Upload prediction results to the Hopsworks Feature Store
+4. Upload features to Hopsworks Feature Store
+5. Download trained models from the Hopsworks Model Registry
+6. Load model weights into the PyTorch architectures
+7. Perform inference per region and bird type
+8. Upload prediction results to the Hopsworks Feature Store
 
 The prediction output includes:
 - `observation_date`
@@ -162,12 +165,16 @@ The frontend visualizes:
 - species-specific predictions
 - the practical value of the ML pipeline outputs
 
+<img width="1470" height="776" alt="image" src="https://github.com/user-attachments/assets/0b192bdd-da6d-453c-a87a-92a184096362" />
+
+
 ---
 
 ## Repository Structure (High-Level)
 
 - `Features/` – feature generation and data processing utilities
 - `Models/` – neural network model definitions
+- `push_daily.py` - daily feature engineer and upload data
 - `inference_daily.py` – daily inference and prediction upload pipeline
 - `Frontend/` – frontend application
 
@@ -177,11 +184,11 @@ The frontend visualizes:
 
 BirdUp demonstrates a complete scalable machine learning workflow:
 - Dynamic real-world data sources
-- Temporal feature engineering with lagged signals
-- Neural network training and versioning
-- Hopsworks-based MLOps
-- Automated daily inference
-- Frontend visualization of predictions
+- Time based feature engineering with lagged features
+- Neural network training
+- Hopsworks-based Feature Store
+- Automated daily inference via Github Actions
+- Frontend visualization of predictions via Github Pages
 
 This project fulfills all requirements for the ID2223 / FID3020 final project.
 
