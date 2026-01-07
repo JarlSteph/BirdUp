@@ -456,7 +456,7 @@ def features(days: int = 7) -> pd.DataFrame:
             print(f"[weather] fallback {name} <- {nn}")
 
             df_copy = success_region_df[nn].copy()
-            df_copy["REGION"] = name  # IMPORTANT: override region label
+            df_copy["REGION"] = name 
             ret_df = pd.concat([ret_df, df_copy], ignore_index=True)
     one_h = one_hot_months(ret_df)
     final_df = add_normalized_year(one_h, start_year=2011)

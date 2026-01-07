@@ -40,26 +40,9 @@ def insert_daily_data():
     # retrive todays data: 
     birding_fg = fs.get_feature_group(name='birding',version=1,)
     daily_df = df_functions.daily()
-    print(type(birding_fg.features[0]), birding_fg.features[0])
-
-    features = birding_fg.features
-    first = features[0]
-
     cols = [f.name for f in birding_fg.schema] 
-    print("all strings:", all(isinstance(c, str) for c in cols))
-
-    print("hopsworks:", hopsworks.__version__)
-
-    print("types in cols:", sorted(set(type(c) for c in cols)))
-    print("first 5 cols:", cols[:5])
-    print("all strings:", all(isinstance(c, str) for c in cols))
-
     birding_fg.select(["region"]).read()
-
-
-
     df_prev = birding_fg.select(cols).read()
-
     daily_df = df_functions.to_hopsworks_df(daily_df)
     day_df_lag = df_functions.add_daily_lags_from_hopsworks_simple(daily_df, df_prev, k=5)
     # after day_df_lag is created, before insert
@@ -74,7 +57,6 @@ def insert_daily_data():
         .fillna(0)
         .astype("int64")
     )
-    print(day_df_lag[["observation_count","weathercode"]].dtypes)
     day_df_lag = enforce_fg_types(day_df_lag)
 
     birding_fg.insert(day_df_lag, wait=True)

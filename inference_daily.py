@@ -148,9 +148,8 @@ def inference_daily():
     goldag_model_loaded = BirdPercentModel(in_features=22, hidden_layers=[32, 16, 1])
     whteag_model_loaded = BirdPercentModel(in_features=22, hidden_layers=[64, 32, 1])
 
-    # 4b) LOAD WEIGHTS (this is what you’re missing)
-    goldag_ckpt = os.path.join(g_path, "goldag_model")   # <-- match filename in Hopsworks
-    whteag_ckpt = os.path.join(w_path, "whteag_model")   # <-- likely; verify via os.listdir
+    goldag_ckpt = os.path.join(g_path, "goldag_model")   
+    whteag_ckpt = os.path.join(w_path, "whteag_model")  
 
     goldag_state = torch.load(goldag_ckpt, map_location="cpu")
     whteag_state = torch.load(whteag_ckpt, map_location="cpu")
