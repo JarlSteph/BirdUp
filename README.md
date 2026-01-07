@@ -129,6 +129,20 @@ whteag_model = train_model(
     whteag_model, num_epochs=10000, learning_rate=0.01, val=False
 )
 ```
+## Model Performance Summary 
+
+The table below summarizes evaluation metrics for the trained models as recorded in the Hopsworks Model Registry. Metrics are computed using hindcasting on historical data and account for class imbalance.
+
+| Model (Species)        | Balanced Accuracy | F1-score | Optimal Sigmoid Threshold |
+|------------------------|-------------------|----------|---------------------------|
+| Golden Eagle (`goleag`) | 0.6947            | 0.0703   | 0.0157                    |
+| White-tailed Eagle (`whteag`) | 0.8051            | 0.4502   | 0.0789                    |
+
+**Notes:**
+- Balanced accuracy is used due to strong class imbalance (many days with no sightings).
+- The low optimal threshold for golden eagle reflects the rarity of sightings.
+- Differences in performance between species reflect ecological and observational differences rather than modeling issues.
+
 
 After training, the model weights are uploaded to the **Hopsworks Model Registry** and versioned for later use in inference.
 
