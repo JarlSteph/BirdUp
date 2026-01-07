@@ -143,6 +143,39 @@ The table below summarizes evaluation metrics for the trained models as recorded
 - The low optimal threshold for golden eagle reflects the rarity of sightings.
 - Differences in performance between species reflect ecological and observational differences rather than modeling issues.
 
+## Confusion Matrices 
+
+The following confusion matrices summarize hindcast performance for each species. Predictions stored in the Hopsworks Feature Store were compared against observed sightings for the same region, date, and species.
+
+### White-tailed Eagle (`whteag`)
+
+|                | Predicted 0 | Predicted 1 |
+|----------------|------------:|------------:|
+| **True 0**     | 10 124      | 2 247       |
+| **True 1**     | 271         | 1 031       |
+
+- **F1-score:** 0.4502  
+- **Balanced accuracy:** 0.8051  
+
+This model shows strong recall and balanced performance under class imbalance, reflecting the higher prevalence and predictability of white-tailed eagle sightings.
+
+---
+
+### Golden Eagle (`goleag`)
+
+|                | Predicted 0 | Predicted 1 |
+|----------------|------------:|------------:|
+| **True 0**     | 11 994      | 1 553       |
+| **True 1**     | 60          | 61          |
+
+- **F1-score:** 0.0703  
+- **Balanced accuracy:** 0.6947  
+
+Golden eagle sightings are rare, resulting in extreme class imbalance. The model prioritizes recall over precision, producing more false positives but successfully identifying a substantial fraction of true sightings.
+
+---
+
+
 
 After training, the model weights are uploaded to the **Hopsworks Model Registry** and versioned for later use in inference.
 
