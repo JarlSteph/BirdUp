@@ -52,7 +52,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          git add Frontend/public/predictions.json
+          git add Frontend/public/predictions.json Frontend/public/performance.json
 
           git diff --cached --quiet && echo "No changes to commit" && exit 0
 
