@@ -2,7 +2,7 @@
   "goleag": {
     "cm": [
       [
-        100,
+        125,
         0
       ],
       [
@@ -10,21 +10,21 @@
         0
       ]
     ],
-    "last_updated": "2026-01-10",
-    "total_samples": 100
+    "last_updated": "2026-01-11",
+    "total_samples": 125
   },
   "whteag": {
     "cm": [
       [
-        83,
+        103,
         6
       ],
       [
-        9,
-        2
+        13,
+        3
       ]
     ],
-    "last_updated": "2026-01-10",
-    "total_samples": 100
+    "last_updated": "2026-01-11",
+    "total_samples": 125
   }
 }
